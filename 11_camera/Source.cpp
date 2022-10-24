@@ -24,7 +24,9 @@ int		window_height = 600;
 char	window_title[] = "Surfaces";
 
 std::vector<glm::vec3> pointsToDraw;
-std::vector<glm::vec3> ControlPoints;
+std::vector<glm::vec3> controlPoints;
+
+GLint dragged = -1;
 
 /* Vertex buffer objektum és vertex array objektum az adattároláshoz.*/
 #define numVBOs	1
@@ -39,6 +41,7 @@ unsigned int	viewLoc;
 unsigned int	projectionLoc;
 int x, z;
 
+
 /** Vetítési és kamera mátrixok felvétele. */
 glm::mat4		view, projection = glm::perspective(glm::radians(45.0f), (float)window_width / (float)window_height, 0.1f, 100.0f);
 
@@ -51,7 +54,8 @@ glm::mat4		model		= glm::mat4(1.0f),
 glm::vec3		cameraPos		= glm::vec3(0.2f, 0.3f,  0.8f), 
 				cameraTarget	= glm::vec3(0.2f, 0.0f,  0.2f), 
 				cameraUpVector	= glm::vec3(0.0f, 1.0f,  0.0f),
-				cameraDirection	= glm::vec3(0.0f, 0.0f, -1.0f); // direction for camera
+				cameraDirection	= glm::vec3(0.0f, 0.0f, -1.0f), // direction for camera
+				cameraMovingY = glm::vec3(0.0f, 1.0f, 0.0f);
 
 bool checkOpenGLError() {
 	bool foundError = false;
@@ -157,6 +161,30 @@ GLuint createShaderProgram() {
 	return vfProgram;
 }
 
+GLfloat dist2(glm::vec3 P1, glm::vec3 P2) {
+	GLfloat dx = P1.x - P2.x;
+	GLfloat dy = P1.y - P2.y;
+
+	return dx * dx + dy * dy;
+}
+
+GLint getActivePoint(vector<glm::vec3> p, GLfloat sensitivity, GLfloat x, GLfloat y) {
+	GLfloat		s = sensitivity * sensitivity;
+	GLint		size = p.size();
+	GLfloat		xNorm = x / (window_width / 2) - 1.0f;
+	GLfloat		yNorm = y / (window_height / 2) - 1.0f;
+	glm::vec3	P = glm::vec3(xNorm, yNorm, 0.0f);
+
+	for (GLint i = size - 1; i >= 0; i--) {
+		glm::vec4 projectPoint = projection * view * model * glm::vec4(p[i].x, p[i].y, p[i].z, 1.0);
+	    glm::vec3 point = glm::vec3(projectPoint.x/projectPoint.w, projectPoint.y/projectPoint.w,0.0f);
+		if (dist2(point, P) < s)
+			return i;
+	}
+		return -1;
+}
+
+
 void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
 	if ((action == GLFW_PRESS) && (key == GLFW_KEY_ESCAPE))
@@ -175,6 +203,13 @@ void cursorPosCallback(GLFWwindow* window, double xPos, double yPos)
 
 void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
 {
+	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+		double	x, y;
+
+		glfwGetCursorPos(window, &x, &y);
+		dragged = getActivePoint(controlPoints, 0.05f, x, window_height - y);
+	}
+	cout << dragged;
 
 }
 
@@ -203,15 +238,15 @@ void generateControllPoints() {
 	{
 		for (int j = 0; j < z; j++)
 		{
-			ControlPoints.push_back(glm::vec3(x_cord, 0.0f, z_cord));
+			controlPoints.push_back(glm::vec3(x_cord, 0.0f, z_cord));
 			z_cord += increment;
 		}
 		x_cord += increment;
 		z_cord = 0.1f;
 	}
 
-	glm::vec3 first = ControlPoints[0];
-	glm::vec3 last = ControlPoints.back();
+	glm::vec3 first = controlPoints[0];
+	glm::vec3 last = controlPoints.back();
 
 	cameraTarget = glm::vec3((first.x + last.x) / 2, 0.0f, (first.z + last.z) / 2);
 	cameraPos.x = cameraTarget.x;
@@ -219,9 +254,9 @@ void generateControllPoints() {
 
 void generatePointsToDraw() {
 	pointsToDraw.clear();
-	for (int i = 0; i < ControlPoints.size(); i++)
+	for (int i = 0; i < controlPoints.size(); i++)
 	{
-		pointsToDraw.push_back(ControlPoints[i]);
+		pointsToDraw.push_back(controlPoints[i]);
 	}
 
 	int index;
@@ -230,7 +265,7 @@ void generatePointsToDraw() {
 		index = i;
 		for (int j = 0; j < x; j++)
 		{
-			pointsToDraw.push_back(ControlPoints[index]);
+			pointsToDraw.push_back(controlPoints[index]);
 			index += z;
 		}
 	}
@@ -340,17 +375,6 @@ void display() {
 		}
 	}
 
-	if (keyboard[GLFW_KEY_W]) {
-		ControlPoints[0].y += 0.001f;
-		generatePointsToDraw();
-		glBindBuffer(GL_ARRAY_BUFFER, VBO[0]);
-		glBufferData(GL_ARRAY_BUFFER, pointsToDraw.size() * sizeof(glm::vec3), pointsToDraw.data(), GL_STATIC_DRAW);
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
-	}
-
-		//cameraPos += cameraSpeed * cameraDirection;
-		
-
 	if (keyboard[GLFW_KEY_DOWN]) {
 		if (cameraPos.y < 1.5f) {
 			cameraPos -= cameraSpeed * glm::normalize((cameraTarget - cameraPos));
@@ -365,13 +389,31 @@ void display() {
 		cameraPos = rotatePoint(cameraTarget, 0.01f, cameraPos);
 	}
 
-	if (keyboard[GLFW_KEY_S]) {
-		ControlPoints[0].y -= 0.001f;
-		generatePointsToDraw();
-		glBindBuffer(GL_ARRAY_BUFFER, VBO[0]);
-		glBufferData(GL_ARRAY_BUFFER, pointsToDraw.size() * sizeof(glm::vec3), pointsToDraw.data(), GL_STATIC_DRAW);
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
+	if (keyboard[GLFW_KEY_W]) {
+		cameraPos += cameraSpeed * cameraMovingY;
 	}
+
+	if (keyboard[GLFW_KEY_S]) {
+		cameraPos -= cameraSpeed * cameraMovingY;
+	}
+
+	if ((keyboard[GLFW_KEY_F]))
+		if (dragged != -1) {
+			controlPoints[dragged].y += 0.001;
+			generatePointsToDraw();
+			glBindBuffer(GL_ARRAY_BUFFER, VBO[0]);
+			glBufferData(GL_ARRAY_BUFFER, pointsToDraw.size() * sizeof(glm::vec3), pointsToDraw.data(), GL_STATIC_DRAW);
+			glBindBuffer(GL_ARRAY_BUFFER, 0);
+		}
+	if ((keyboard[GLFW_KEY_L]))
+		if (dragged != -1) {
+			controlPoints[dragged].y -= 0.001;
+			generatePointsToDraw();
+			glBindBuffer(GL_ARRAY_BUFFER, VBO[0]);
+			glBufferData(GL_ARRAY_BUFFER, pointsToDraw.size() * sizeof(glm::vec3), pointsToDraw.data(), GL_STATIC_DRAW);
+			glBindBuffer(GL_ARRAY_BUFFER, 0);
+		}
+
 		
 
 	//translateM = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
@@ -393,7 +435,7 @@ void display() {
 		begin += z;
 	}
 
-	begin = ControlPoints.size();
+	begin = controlPoints.size();
 	for (size_t i = 0; i < z; i++)
 	{
 		glDrawArrays(GL_LINE_STRIP, begin, x);
