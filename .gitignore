@@ -1,0 +1,14 @@
+
+*.pdb
+*.exe
+*.tlog
+*.vsidx
+*.lock
+.vs/GeomMod/v17/.suo
+*.db
+*.log
+*.obj
+*.recipe
+*.ilk
+*.idb
+*.dll
