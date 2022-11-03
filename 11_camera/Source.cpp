@@ -40,6 +40,7 @@ unsigned int	modelLoc;
 unsigned int	viewLoc;
 unsigned int	projectionLoc;
 int x, z;
+GLuint pointNum, selectedPoint, drawingPoints;
 
 
 /** Vetítési és kamera mátrixok felvétele. */
@@ -209,7 +210,7 @@ void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
 		glfwGetCursorPos(window, &x, &y);
 		dragged = getActivePoint(controlPoints, 0.05f, x, window_height - y);
 	}
-	cout << dragged;
+	cout << dragged << "\n";
 
 }
 
@@ -332,6 +333,10 @@ void init(GLFWwindow* window) {
 	modelLoc = glGetUniformLocation(renderingProgram, "model");
 	viewLoc = glGetUniformLocation(renderingProgram, "view");
 	projectionLoc = glGetUniformLocation(renderingProgram, "projection");
+
+	pointNum = glGetUniformLocation(renderingProgram, "pointNum");
+	selectedPoint = glGetUniformLocation(renderingProgram, "selectedPoint");
+	drawingPoints = glGetUniformLocation(renderingProgram, "drawingPoints");
 	// set the projection, since it change rarely
 	glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
 	// set black for clearing
@@ -422,11 +427,17 @@ void display() {
 
 	computeCameraMatrix();
 
+	glProgramUniform1f(renderingProgram, pointNum, controlPoints.size());
+	glProgramUniform1f(renderingProgram, selectedPoint, dragged);
+	glProgramUniform1f(renderingProgram, drawingPoints, 1.0f);
+
 	/*Csatoljuk a vertex array objektumunkat. */
 	glBindVertexArray(VAO[0]);
 	glPointSize(10);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	glDrawArrays(GL_POINTS, 0, pointsToDraw.size()/2);
+
+	glProgramUniform1f(renderingProgram, drawingPoints, 2.0f);
 
 	size_t begin = 0;
 	for (size_t i = 0; i <x; i++)
