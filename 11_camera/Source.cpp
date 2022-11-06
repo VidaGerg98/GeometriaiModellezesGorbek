@@ -287,6 +287,15 @@ void generateControllPoints() {
 	cameraPos.x = cameraTarget.x;
 }
 
+void generateAxesToDraw() {
+	pointsToDraw.push_back(glm::vec3(1.0f, 0.0f, 0.0f));
+	pointsToDraw.push_back(glm::vec3(-1.0f, 0.0f, 0.0f));
+	pointsToDraw.push_back(glm::vec3(0.0f, 1.0f, 0.0f));
+	pointsToDraw.push_back(glm::vec3(0.0f, -1.0f, 0.0f));
+	pointsToDraw.push_back(glm::vec3(0.0f, 0.0f, 1.0f));
+	pointsToDraw.push_back(glm::vec3(0.0f, 0.0f, -1.0f));
+}
+
 void generatePointsToDraw() {
 	pointsToDraw.clear();
 	for (int i = 0; i < controlPoints.size(); i++)
@@ -304,15 +313,8 @@ void generatePointsToDraw() {
 			index += z;
 		}
 	}
-}
 
-void generateAxesToDraw() {
-	pointsToDraw.push_back(glm::vec3(1.0f, 0.0f, 0.0f));
-	pointsToDraw.push_back(glm::vec3(-1.0f, 0.0f, 0.0f));
-	pointsToDraw.push_back(glm::vec3(0.0f, 1.0f, 0.0f));
-	pointsToDraw.push_back(glm::vec3(0.0f, -1.0f, 0.0f));
-	pointsToDraw.push_back(glm::vec3(0.0f, 0.0f, 1.0f));
-	pointsToDraw.push_back(glm::vec3(0.0f, 0.0f, -1.0f));
+	generateAxesToDraw();
 }
 
 glm::vec3 rotatePoint(glm::vec3 center, float angle, glm::vec3 point) {
@@ -335,7 +337,6 @@ void init(GLFWwindow* window) {
 	renderingProgram = createShaderProgram();
 	generateControllPoints();
 	generatePointsToDraw();
-	generateAxesToDraw();
 
 	/* Létrehozzuk a szükséges Vertex buffer és vertex array objektumot. */
 	glGenBuffers(numVBOs, VBO);
