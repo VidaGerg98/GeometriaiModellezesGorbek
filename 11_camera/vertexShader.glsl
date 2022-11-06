@@ -10,6 +10,7 @@ uniform mat4 projection;
 uniform float pointNum;
 uniform float selectedPoint;
 uniform float drawingPoints;
+uniform float numberOfPointsToDraw;
 
 void main(void)
 {
@@ -22,6 +23,14 @@ void main(void)
 		else {
 			myColor = vec3(1.0, 1.0, 1.0);
 		}
+	} else if (gl_VertexID == (numberOfPointsToDraw - 6) || gl_VertexID == (numberOfPointsToDraw - 5)) {
+		myColor = vec3(1.0, 0.0, 0.0);
+	}
+	else if (gl_VertexID == (numberOfPointsToDraw - 4) || gl_VertexID == (numberOfPointsToDraw - 3)) {
+		myColor = vec3(0.0, 1.0, 0.0);
+	}
+	else if (gl_VertexID == (numberOfPointsToDraw -2) || gl_VertexID == (numberOfPointsToDraw - 1)) {
+		myColor = vec3(0.0, 0.0, 1.0);
 	}
 	else {
 		myColor = vec3(1.0, 1.0, 1.0);

@@ -40,7 +40,7 @@ unsigned int	modelLoc;
 unsigned int	viewLoc;
 unsigned int	projectionLoc;
 int x, z;
-GLuint pointNum, selectedPoint, drawingPoints;
+GLuint pointNum, selectedPoint, drawingPoints, numberOfPointsToDraw;
 
 
 /** Vetítési és kamera mátrixok felvétele. */
@@ -272,6 +272,15 @@ void generatePointsToDraw() {
 	}
 }
 
+void generateAxesToDraw() {
+	pointsToDraw.push_back(glm::vec3(1.0f, 0.0f, 0.0f));
+	pointsToDraw.push_back(glm::vec3(-1.0f, 0.0f, 0.0f));
+	pointsToDraw.push_back(glm::vec3(0.0f, 1.0f, 0.0f));
+	pointsToDraw.push_back(glm::vec3(0.0f, -1.0f, 0.0f));
+	pointsToDraw.push_back(glm::vec3(0.0f, 0.0f, 1.0f));
+	pointsToDraw.push_back(glm::vec3(0.0f, 0.0f, -1.0f));
+}
+
 glm::vec3 rotatePoint(glm::vec3 center, float angle, glm::vec3 point) {
 	float s = sin(angle);
 	float c = cos(angle);
@@ -292,6 +301,7 @@ void init(GLFWwindow* window) {
 	renderingProgram = createShaderProgram();
 	generateControllPoints();
 	generatePointsToDraw();
+	generateAxesToDraw();
 
 	/* Létrehozzuk a szükséges Vertex buffer és vertex array objektumot. */
 	glGenBuffers(numVBOs, VBO);
@@ -337,6 +347,7 @@ void init(GLFWwindow* window) {
 	pointNum = glGetUniformLocation(renderingProgram, "pointNum");
 	selectedPoint = glGetUniformLocation(renderingProgram, "selectedPoint");
 	drawingPoints = glGetUniformLocation(renderingProgram, "drawingPoints");
+	numberOfPointsToDraw = glGetUniformLocation(renderingProgram, "numberOfPointsToDraw");
 	// set the projection, since it change rarely
 	glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
 	// set black for clearing
@@ -430,12 +441,13 @@ void display() {
 	glProgramUniform1f(renderingProgram, pointNum, controlPoints.size());
 	glProgramUniform1f(renderingProgram, selectedPoint, dragged);
 	glProgramUniform1f(renderingProgram, drawingPoints, 1.0f);
+	glProgramUniform1f(renderingProgram, numberOfPointsToDraw, pointsToDraw.size());
 
 	/*Csatoljuk a vertex array objektumunkat. */
 	glBindVertexArray(VAO[0]);
 	glPointSize(10);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-	glDrawArrays(GL_POINTS, 0, pointsToDraw.size()/2);
+	glDrawArrays(GL_POINTS, 0, (pointsToDraw.size() - 6) / 2);
 
 	glProgramUniform1f(renderingProgram, drawingPoints, 2.0f);
 
@@ -453,6 +465,14 @@ void display() {
 		begin += x;
 	}
 	/* Leválasztjuk, nehogy bármilyen érték felülíródjon.*/
+
+	//tengely kirajzolása
+	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	glDrawArrays(GL_POINTS, (pointsToDraw.size() - 6), pointsToDraw.size());
+	glDrawArrays(GL_LINE_STRIP, pointsToDraw.size() - 6, 2);
+	glDrawArrays(GL_LINE_STRIP, pointsToDraw.size() - 4, 2);
+	glDrawArrays(GL_LINE_STRIP, pointsToDraw.size() - 2, 2);
+
 	glBindVertexArray(0);	
 }
 
