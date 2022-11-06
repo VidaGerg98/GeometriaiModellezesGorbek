@@ -185,6 +185,40 @@ GLint getActivePoint(vector<glm::vec3> p, GLfloat sensitivity, GLfloat x, GLfloa
 		return -1;
 }
 
+int NCR(int n, int r) {
+	if (r == 0) return 1;
+
+	if (r > n / 2) return NCR(n, n - r);
+
+	long res = 1;
+
+	for (int k = 1; k <= r; ++k) {
+		res *= n - k + 1;
+		res /= k;
+	}
+
+	return res;
+}
+
+GLfloat BFunction(GLfloat i, GLfloat n, GLfloat u) {
+	return NCR(n, i) * pow(u, i) * pow(1.0f - u, n - i);
+}
+
+glm::vec3 BezierPoints(GLfloat u, GLfloat v) {
+	glm::vec3 point = glm::vec3(0.0f, 0.0f, 0.0f);;
+
+	for (int i = 0; i < x; i++) {
+		for (int j = 0; j < z; j++) {
+			GLfloat B1 = BFunction(i, x, u);
+			GLfloat B2 = BFunction(j, z, v);
+			point.x += B1 * B2 * controlPoints.at(i * z + j).x;
+			point.y += B1 * B2 * controlPoints.at(i * z + j).y;
+			point.z += B1 * B2 * controlPoints.at(i * z + j).z;
+		}
+	}
+
+	return point;
+}
 
 void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
