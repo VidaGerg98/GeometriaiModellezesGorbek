@@ -31,6 +31,8 @@ void main(void)
 	}
 	else if (gl_VertexID == (numberOfPointsToDraw -2) || gl_VertexID == (numberOfPointsToDraw - 1)) {
 		myColor = vec3(0.0, 0.0, 1.0);
+	} else if (drawingPoints == 3.0f) {
+		myColor = vec3(1.0, 0.5, 0.2);
 	}
 	else {
 		myColor = vec3(1.0, 1.0, 1.0);

@@ -317,12 +317,34 @@ void generatePointsToDraw() {
 		}
 	}
 
-	GLfloat u = 0.0f, v = 0.0f, increment = 1.0f / lineCount;
+	GLfloat u = 0.0f, v = 0.0f, increment = 1.0f / lineCount, uIcrement = 1.0f / (x - 1), vIcrement = 1.0f / (z - 1);
+	int lastPoint = z - 1;
 
-	while (u < 1.0f) {
+	while (u <= 1.0f) {
+		v = 0.0f;
+		while (v < 1.0f) {
+			pointsToDraw.push_back(BezierPoints(u, v));
+			cout << glm::to_string(BezierPoints(u, v)) << "\n";
+			v += increment;
+		}
+		v = 1.0f;
 		pointsToDraw.push_back(BezierPoints(u, v));
 		cout << glm::to_string(BezierPoints(u, v)) << "\n";
-		u += increment;
+		u += uIcrement;
+	}
+
+	v = 0.0f;
+	while (v <= 1.0f) {
+		u = 0.0f;
+		while (u < 1.0f) {
+			pointsToDraw.push_back(BezierPoints(u, v));
+			cout << glm::to_string(BezierPoints(u, v)) << "\n";
+			u += increment;
+		}
+		u = 1.0f;
+		pointsToDraw.push_back(BezierPoints(u, v));
+		cout << glm::to_string(BezierPoints(u, v)) << "\n";
+		v += vIcrement;
 	}
 
 	cout << "------------------------\n";
@@ -488,35 +510,49 @@ void display() {
 
 	glProgramUniform1f(renderingProgram, pointNum, controlPoints.size());
 	glProgramUniform1f(renderingProgram, selectedPoint, dragged);
-	glProgramUniform1f(renderingProgram, drawingPoints, 1.0f);
 	glProgramUniform1f(renderingProgram, numberOfPointsToDraw, pointsToDraw.size());
 
 	/*Csatoljuk a vertex array objektumunkat. */
 	glBindVertexArray(VAO[0]);
+	size_t begin = 0;
+
+	//Bezier felület kirajzolása
+	glProgramUniform1f(renderingProgram, drawingPoints, 3.0f);
+	begin = controlPoints.size() * 2;
+	for (size_t i = 0; i < x; i++) {
+		glDrawArrays(GL_LINE_STRIP, begin, lineCount + 1);
+		begin += lineCount + 1;
+	}
+
+	for (size_t i = 0; i < z; i++) {
+		glDrawArrays(GL_LINE_STRIP, begin, lineCount + 1);
+		begin += lineCount + 1;
+	}
+
+	
+	glProgramUniform1f(renderingProgram, drawingPoints, 1.0f);
 	glPointSize(10);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	glDrawArrays(GL_POINTS, 0, controlPoints.size());
 
 	glProgramUniform1f(renderingProgram, drawingPoints, 2.0f);
 
-	////Kontrollpontháló kirajzolása
-	//size_t begin = 0;
-	//for (size_t i = 0; i <x; i++)
-	//{
-	//	glDrawArrays(GL_LINE_STRIP, begin, z);
-	//	begin += z;
-	//}
+	//Kontrollpontháló kirajzolása
+	begin = 0;
+	for (size_t i = 0; i < x; i++)
+	{
+		glDrawArrays(GL_LINE_STRIP, begin, z);
+		begin += z;
+	}
 
-	//begin = controlPoints.size();
-	//for (size_t i = 0; i < z; i++)
-	//{
-	//	glDrawArrays(GL_LINE_STRIP, begin, x);
-	//	begin += x;
-	//}
-
-	//Bezier felület kirajzolása
-	glDrawArrays(GL_LINE_STRIP, controlPoints.size() * 2, lineCount);
-
+	begin = controlPoints.size();
+	for (size_t i = 0; i < z; i++)
+	{
+		glDrawArrays(GL_LINE_STRIP, begin, x);
+		begin += x;
+	}
+	
+	glProgramUniform1f(renderingProgram, drawingPoints, 4.0f);
 	//tengely kirajzolása
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	//glDrawArrays(GL_POINTS, (pointsToDraw.size() - 6), pointsToDraw.size());
