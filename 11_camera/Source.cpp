@@ -41,6 +41,7 @@ unsigned int	viewLoc;
 unsigned int	projectionLoc;
 int x, z;
 GLuint pointNum, selectedPoint, drawingPoints, numberOfPointsToDraw;
+GLfloat lineCount = 10.f;
 
 
 /** Vetítési és kamera mátrixok felvétele. */
@@ -314,6 +315,16 @@ void generatePointsToDraw() {
 		}
 	}
 
+	GLfloat u = 0.0f, v = 0.0f, increment = 1.0f / lineCount;
+
+	while (u < 1.0f) {
+		pointsToDraw.push_back(BezierPoints(u, v));
+		cout << glm::to_string(BezierPoints(u, v)) << "\n";
+		u += increment;
+	}
+
+	cout << "------------------------\n";
+
 	generateAxesToDraw();
 }
 
@@ -482,28 +493,31 @@ void display() {
 	glBindVertexArray(VAO[0]);
 	glPointSize(10);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-	glDrawArrays(GL_POINTS, 0, (pointsToDraw.size() - 6) / 2);
+	glDrawArrays(GL_POINTS, 0, controlPoints.size());
 
 	glProgramUniform1f(renderingProgram, drawingPoints, 2.0f);
 
-	size_t begin = 0;
-	for (size_t i = 0; i <x; i++)
-	{
-		glDrawArrays(GL_LINE_STRIP, begin, z);
-		begin += z;
-	}
+	////Kontrollpontháló kirajzolása
+	//size_t begin = 0;
+	//for (size_t i = 0; i <x; i++)
+	//{
+	//	glDrawArrays(GL_LINE_STRIP, begin, z);
+	//	begin += z;
+	//}
 
-	begin = controlPoints.size();
-	for (size_t i = 0; i < z; i++)
-	{
-		glDrawArrays(GL_LINE_STRIP, begin, x);
-		begin += x;
-	}
-	/* Leválasztjuk, nehogy bármilyen érték felülíródjon.*/
+	//begin = controlPoints.size();
+	//for (size_t i = 0; i < z; i++)
+	//{
+	//	glDrawArrays(GL_LINE_STRIP, begin, x);
+	//	begin += x;
+	//}
+
+	//Bezier felület kirajzolása
+	glDrawArrays(GL_LINE_STRIP, controlPoints.size() * 2, lineCount);
 
 	//tengely kirajzolása
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-	glDrawArrays(GL_POINTS, (pointsToDraw.size() - 6), pointsToDraw.size());
+	//glDrawArrays(GL_POINTS, (pointsToDraw.size() - 6), pointsToDraw.size());
 	glDrawArrays(GL_LINE_STRIP, pointsToDraw.size() - 6, 2);
 	glDrawArrays(GL_LINE_STRIP, pointsToDraw.size() - 4, 2);
 	glDrawArrays(GL_LINE_STRIP, pointsToDraw.size() - 2, 2);
