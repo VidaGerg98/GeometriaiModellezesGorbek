@@ -206,12 +206,14 @@ GLfloat BFunction(GLfloat i, GLfloat n, GLfloat u) {
 }
 
 glm::vec3 BezierPoints(GLfloat u, GLfloat v) {
-	glm::vec3 point = glm::vec3(0.0f, 0.0f, 0.0f);;
+	glm::vec3 point = glm::vec3(0.0f, 0.0f, 0.0f);
+	GLint n = x - 1;
+	GLint m = z - 1;
 
-	for (int i = 0; i < x; i++) {
-		for (int j = 0; j < z; j++) {
-			GLfloat B1 = BFunction(i, x, u);
-			GLfloat B2 = BFunction(j, z, v);
+	for (int i = 0; i <= n; i++) {
+		for (int j = 0; j <= m; j++) {
+			GLfloat B1 = BFunction(i, n, u);
+			GLfloat B2 = BFunction(j, m, v);
 			point.x += B1 * B2 * controlPoints.at(i * z + j).x;
 			point.y += B1 * B2 * controlPoints.at(i * z + j).y;
 			point.z += B1 * B2 * controlPoints.at(i * z + j).z;
