@@ -12,6 +12,9 @@
 
 using namespace std;
 
+//bezierháló sûrûsége
+int bezierLines = 5;
+
 extern void cleanUpScene();
 
 GLFWwindow	*window;
@@ -317,7 +320,7 @@ void generatePointsToDraw() {
 		}
 	}
 
-	GLfloat u = 0.0f, v = 0.0f, increment = 1.0f / lineCount, uIcrement = 1.0f / (x - 1), vIcrement = 1.0f / (z - 1);
+	GLfloat u = 0.0f, v = 0.0f, increment = 1.0f / lineCount, uIcrement = 1.0f / (x - 1), vIcrement =  (10.0f / bezierLines / 10) / (z - 1);
 	int lastPoint = z - 1;
 
 	while (u <= 1.0f) {
@@ -334,9 +337,10 @@ void generatePointsToDraw() {
 	}
 
 	v = 0.0f;
-	while (v <= 1.0f) {
+	while (v < 1.1f) {
 		u = 0.0f;
 		while (u < 1.0f) {
+			cout << u << ", " << v << "\n";
 			pointsToDraw.push_back(BezierPoints(u, v));
 			cout << glm::to_string(BezierPoints(u, v)) << "\n";
 			u += increment;
@@ -524,7 +528,7 @@ void display() {
 		begin += lineCount + 1;
 	}
 
-	for (size_t i = 0; i < z; i++) {
+	for (size_t i = 0; i <= bezierLines * (z - 1); i++) {
 		glDrawArrays(GL_LINE_STRIP, begin, lineCount + 1);
 		begin += lineCount + 1;
 	}
