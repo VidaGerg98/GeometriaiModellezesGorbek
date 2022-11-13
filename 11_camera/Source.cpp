@@ -320,19 +320,20 @@ void generatePointsToDraw() {
 		}
 	}
 
-	GLfloat u = 0.0f, v = 0.0f, increment = 1.0f / lineCount, uIcrement = 1.0f / (x - 1), vIcrement =  (10.0f / bezierLines / 10) / (z - 1);
+
+	GLfloat u = 0.0f, v = 0.0f, increment = 1.0f / lineCount, uIcrement = 1.0f / (x - 1), vIcrement = (1.0f / bezierLines) / (z - 1);
 	int lastPoint = z - 1;
 
 	while (u <= 1.0f) {
 		v = 0.0f;
 		while (v < 1.0f) {
 			pointsToDraw.push_back(BezierPoints(u, v));
-			cout << glm::to_string(BezierPoints(u, v)) << "\n";
+			//cout << glm::to_string(BezierPoints(u, v)) << "\n";
 			v += increment;
 		}
 		v = 1.0f;
 		pointsToDraw.push_back(BezierPoints(u, v));
-		cout << glm::to_string(BezierPoints(u, v)) << "\n";
+		//cout << glm::to_string(BezierPoints(u, v)) << "\n";
 		u += uIcrement;
 	}
 
@@ -340,16 +341,16 @@ void generatePointsToDraw() {
 	while (v < 1.1f) {
 		u = 0.0f;
 		while (u < 1.0f) {
-			cout << u << ", " << v << "\n";
 			pointsToDraw.push_back(BezierPoints(u, v));
-			cout << glm::to_string(BezierPoints(u, v)) << "\n";
+			//cout << glm::to_string(BezierPoints(u, v)) << "\n";
 			u += increment;
 		}
 		u = 1.0f;
 		pointsToDraw.push_back(BezierPoints(u, v));
-		cout << glm::to_string(BezierPoints(u, v)) << "\n";
+		//cout << glm::to_string(BezierPoints(u, v)) << "\n";
 		v += vIcrement;
 	}
+
 
 	cout << "------------------------\n";
 
