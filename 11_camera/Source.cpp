@@ -15,6 +15,10 @@ using namespace std;
 //bezierháló sûrûsége
 int bezierLines = 5;
 
+//bezier = 1
+//b-spline = 2
+int surface_id = 2;
+
 extern void cleanUpScene();
 
 GLFWwindow	*window;
@@ -320,39 +324,38 @@ void generatePointsToDraw() {
 		}
 	}
 
+	if (surface_id == 1) {
+		GLfloat u = 0.0f, v = 0.0f, increment = 1.0f / lineCount, uIcrement = (1.0f / bezierLines) / (x - 1), vIcrement = (1.0f / bezierLines) / (z - 1);
+		int lastPoint = z - 1;
 
-	GLfloat u = 0.0f, v = 0.0f, increment = 1.0f / lineCount, uIcrement = (1.0f / bezierLines) / (x - 1), vIcrement = (1.0f / bezierLines) / (z - 1);
-	int lastPoint = z - 1;
+		while (u < 1.1f) {
+			v = 0.0f;
+			while (v < 1.0f) {
+				pointsToDraw.push_back(BezierPoints(u, v));
+				//cout << glm::to_string(BezierPoints(u, v)) << "\n";
+				v += increment;
+			}
+			v = 1.0f;
+			pointsToDraw.push_back(BezierPoints(u, v));
+			//cout << glm::to_string(BezierPoints(u, v)) << "\n";
+			u += uIcrement;
+		}
 
-	while (u < 1.1f) {
 		v = 0.0f;
-		while (v < 1.0f) {
+		while (v < 1.1f) {
+			u = 0.0f;
+			while (u < 1.0f) {
+				pointsToDraw.push_back(BezierPoints(u, v));
+				//cout << glm::to_string(BezierPoints(u, v)) << "\n";
+				u += increment;
+			}
+			u = 1.0f;
 			pointsToDraw.push_back(BezierPoints(u, v));
 			//cout << glm::to_string(BezierPoints(u, v)) << "\n";
-			v += increment;
+			v += vIcrement;
 		}
-		v = 1.0f;
-		pointsToDraw.push_back(BezierPoints(u, v));
-		//cout << glm::to_string(BezierPoints(u, v)) << "\n";
-		u += uIcrement;
+		//cout << "------------------------\n";
 	}
-
-	v = 0.0f;
-	while (v < 1.1f) {
-		u = 0.0f;
-		while (u < 1.0f) {
-			pointsToDraw.push_back(BezierPoints(u, v));
-			//cout << glm::to_string(BezierPoints(u, v)) << "\n";
-			u += increment;
-		}
-		u = 1.0f;
-		pointsToDraw.push_back(BezierPoints(u, v));
-		//cout << glm::to_string(BezierPoints(u, v)) << "\n";
-		v += vIcrement;
-	}
-
-
-	cout << "------------------------\n";
 
 	generateAxesToDraw();
 }
