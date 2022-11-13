@@ -321,10 +321,10 @@ void generatePointsToDraw() {
 	}
 
 
-	GLfloat u = 0.0f, v = 0.0f, increment = 1.0f / lineCount, uIcrement = 1.0f / (x - 1), vIcrement = (1.0f / bezierLines) / (z - 1);
+	GLfloat u = 0.0f, v = 0.0f, increment = 1.0f / lineCount, uIcrement = (1.0f / bezierLines) / (x - 1), vIcrement = (1.0f / bezierLines) / (z - 1);
 	int lastPoint = z - 1;
 
-	while (u <= 1.0f) {
+	while (u < 1.1f) {
 		v = 0.0f;
 		while (v < 1.0f) {
 			pointsToDraw.push_back(BezierPoints(u, v));
@@ -524,7 +524,7 @@ void display() {
 	//Bezier felület kirajzolása
 	glProgramUniform1f(renderingProgram, drawingPoints, 3.0f);
 	begin = controlPoints.size() * 2;
-	for (size_t i = 0; i < x; i++) {
+	for (size_t i = 0; i <= bezierLines * (x - 1); i++) {
 		glDrawArrays(GL_LINE_STRIP, begin, lineCount + 1);
 		begin += lineCount + 1;
 	}
