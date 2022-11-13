@@ -48,7 +48,7 @@ unsigned int	viewLoc;
 unsigned int	projectionLoc;
 int x, z;
 GLuint pointNum, selectedPoint, drawingPoints, numberOfPointsToDraw;
-GLfloat lineCount = 10.f;
+GLfloat lineCount = 3.0f;
 
 
 /** Vetítési és kamera mátrixok felvétele. */
@@ -230,6 +230,41 @@ glm::vec3 BezierPoints(GLfloat u, GLfloat v) {
 	return point;
 }
 
+GLfloat NFunction(int i, int p, GLfloat u, std::vector<float> Vec) {
+	if (p == 0) {
+		if (Vec[i] <= u && u < Vec[i + 1]) {
+			return 1.0f;
+		}
+		else {
+			return 0.0f;
+		}
+	}
+
+	return (((u - Vec[i]) / (Vec[i + p] - Vec[i])) * NFunction(i, p - 1, u, Vec)) + ((Vec[i + p + 1] - u) / (Vec[i + p + 1] - Vec[i + 1])) * NFunction(i + 1, p - 1, u, Vec);
+}
+
+glm::vec3 BSplinePoints(GLfloat u, GLfloat v, std::vector<GLfloat> U, std::vector<GLfloat> V) {
+	glm::vec3 point = glm::vec3(0.0f, 0.0f, 0.0f);
+	GLint n = z - 1;
+	GLint m = x - 1;
+	GLint h = U.size() - 1;
+	GLint k = V.size() - 1;
+	GLint p = h - m - 1;
+	GLint q = k - n - 1;
+
+	for (int i = 0; i <= m; i++) {
+		for (int j = 0; j <= n; j++) {
+			GLfloat N1 = NFunction(i, p, u, U);
+			GLfloat N2 = NFunction(j, q, v, V);
+			point.x += N1 * N2 * controlPoints.at(i * z + j).x;
+			point.y += N1 * N2 * controlPoints.at(i * z + j).y;
+			point.z += N1 * N2 * controlPoints.at(i * z + j).z;
+		}
+	}
+
+	return point;
+}
+
 void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
 	if ((action == GLFW_PRESS) && (key == GLFW_KEY_ESCAPE))
@@ -324,11 +359,11 @@ void generatePointsToDraw() {
 		}
 	}
 
+	//Bezier felület
 	if (surface_id == 1) {
 		GLfloat u = 0.0f, v = 0.0f, increment = 1.0f / lineCount, uIcrement = (1.0f / bezierLines) / (x - 1), vIcrement = (1.0f / bezierLines) / (z - 1);
-		int lastPoint = z - 1;
 
-		while (u < 1.1f) {
+		while (u < 1.0f) {
 			v = 0.0f;
 			while (v < 1.0f) {
 				pointsToDraw.push_back(BezierPoints(u, v));
@@ -340,9 +375,17 @@ void generatePointsToDraw() {
 			//cout << glm::to_string(BezierPoints(u, v)) << "\n";
 			u += uIcrement;
 		}
+		u = 1.0f, v = 0.0f;
+		while (v < 1.0f) {
+			pointsToDraw.push_back(BezierPoints(u, v));
+			//cout << glm::to_string(BezierPoints(u, v)) << "\n";
+			v += increment;
+		}
+		v = 1.0f;
+		pointsToDraw.push_back(BezierPoints(u, v));
 
 		v = 0.0f;
-		while (v < 1.1f) {
+		while (v < 1.0f) {
 			u = 0.0f;
 			while (u < 1.0f) {
 				pointsToDraw.push_back(BezierPoints(u, v));
@@ -354,7 +397,50 @@ void generatePointsToDraw() {
 			//cout << glm::to_string(BezierPoints(u, v)) << "\n";
 			v += vIcrement;
 		}
+		v = 1.0f, u = 0.0f;
+		while (u < 1.0f) {
+			pointsToDraw.push_back(BezierPoints(u, v));
+			//cout << glm::to_string(BezierPoints(u, v)) << "\n";
+			u += increment;
+		}
+		u = 1.0f;
+		pointsToDraw.push_back(BezierPoints(u, v));
 		//cout << "------------------------\n";
+	}
+	else if (surface_id == 2) {  //B-Spline feület
+		GLfloat u = 0.0f, v = 0.0f, increment = 1.0f / lineCount, uIcrement = (1.0f / bezierLines) / (x - 1), vIcrement = (1.0f / bezierLines) / (z - 1);
+		std::vector<GLfloat> U;
+		std::vector<GLfloat> V;
+		while (u < 1.0f){
+			U.push_back(u);
+			u += increment;
+		}
+		U.push_back(1.0f);
+
+		while (v < 1.0f) {
+			V.push_back(v);
+			v += increment;
+		}
+		V.push_back(1.0f);
+
+		cout << "U: ";
+		for (int i = 0; i < U.size(); i++) {
+			cout << U[i] << ", ";
+		}
+		cout << "\n";
+		cout << "V: ";
+		for (int i = 0; i < U.size(); i++) {
+			cout << V[i] << ", ";
+		}
+		cout << "\n";
+
+		u = 0.0f, v = 0.0f;
+		U = { 0.0f, 0.0f, 0.0f, 0.25f, 0.5f, 0.75f, 1.0f, 1.0f, 1.0f };
+		V = {0.0f, 0.0f, 0.0f, 0.0f, 0.33f, 0.66f, 1.0f, 1.0f, 1.0f, 1.0f};
+		cout << glm::to_string(BSplinePoints(u, v, U, V)) << "\n";
+
+
+
 	}
 
 	generateAxesToDraw();
@@ -546,19 +632,19 @@ void display() {
 	glProgramUniform1f(renderingProgram, drawingPoints, 2.0f);
 
 	//Kontrollpontháló kirajzolása
-	begin = 0;
-	for (size_t i = 0; i < x; i++)
-	{
-		glDrawArrays(GL_LINE_STRIP, begin, z);
-		begin += z;
-	}
+	//begin = 0;
+	//for (size_t i = 0; i < x; i++)
+	//{
+	//	glDrawArrays(GL_LINE_STRIP, begin, z);
+	//	begin += z;
+	//}
 
-	begin = controlPoints.size();
-	for (size_t i = 0; i < z; i++)
-	{
-		glDrawArrays(GL_LINE_STRIP, begin, x);
-		begin += x;
-	}
+	//begin = controlPoints.size();
+	//for (size_t i = 0; i < z; i++)
+	//{
+	//	glDrawArrays(GL_LINE_STRIP, begin, x);
+	//	begin += x;
+	//}
 	
 	glProgramUniform1f(renderingProgram, drawingPoints, 4.0f);
 	//tengely kirajzolása
