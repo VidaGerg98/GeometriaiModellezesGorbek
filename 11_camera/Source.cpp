@@ -1,3 +1,17 @@
+/*
+Jobbra-balra nyilakkal forgatás
+Fel-le nyilakkal közelítés, távolodás
+F: kiválasztott pont mozgatása felfele
+L: kiválasztott pont mozgatása lefele
+W: kamera mozgatása felfele
+S: kamera mozgatása lefele
+G: Grid ki-be kapcsolása
+C: kontrollpontok ki-be kapcsolása
+R: kontrollpontok alaphelyzetbe állítása
+1: Bezier felület
+2: B-spline felület
+*/
+
 #include <array>
 #include <fstream>
 #include <GL/glew.h>
@@ -49,6 +63,7 @@ unsigned int	projectionLoc;
 int x, z;
 GLuint pointNum, selectedPoint, drawingPoints, numberOfPointsToDraw;
 GLfloat lineCount = 3.0f;
+bool showGrid = true, showCPoints = true;
 
 
 /** Vetítési és kamera mátrixok felvétele. */
@@ -240,7 +255,11 @@ GLfloat NFunction(int i, int p, GLfloat u, std::vector<float> Vec) {
 		}
 	}
 
-	return (((u - Vec[i]) / (Vec[i + p] - Vec[i])) * NFunction(i, p - 1, u, Vec)) + ((Vec[i + p + 1] - u) / (Vec[i + p + 1] - Vec[i + 1])) * NFunction(i + 1, p - 1, u, Vec);
+	GLfloat A = (((u - Vec[i]) / (Vec[i + p] - Vec[i])) * NFunction(i, p - 1, u, Vec));
+	GLfloat B = ((Vec[i + p + 1] - u) / (Vec[i + p + 1] - Vec[i + 1])) * NFunction(i + 1, p - 1, u, Vec);
+	GLfloat res = A + B;
+
+	return res;
 }
 
 glm::vec3 BSplinePoints(GLfloat u, GLfloat v, std::vector<GLfloat> U, std::vector<GLfloat> V) {
@@ -265,17 +284,6 @@ glm::vec3 BSplinePoints(GLfloat u, GLfloat v, std::vector<GLfloat> U, std::vecto
 	return point;
 }
 
-void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
-{
-	if ((action == GLFW_PRESS) && (key == GLFW_KEY_ESCAPE))
-		cleanUpScene();
-
-	if (action == GLFW_PRESS)
-		keyboard[key] = GL_TRUE;
-	else if (action == GLFW_RELEASE)
-		keyboard[key] = GL_FALSE;
-}
-
 void cursorPosCallback(GLFWwindow* window, double xPos, double yPos)
 {
 
@@ -283,12 +291,14 @@ void cursorPosCallback(GLFWwindow* window, double xPos, double yPos)
 
 void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
 {
-	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
-		double	x, y;
+	if (showCPoints) {
+		if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+			double	x, y;
 
-		glfwGetCursorPos(window, &x, &y);
-		dragged = getActivePoint(controlPoints, 0.05f, x, window_height - y);
-	}
+			glfwGetCursorPos(window, &x, &y);
+			dragged = getActivePoint(controlPoints, 0.05f, x, window_height - y);
+		}
+	}	
 	cout << dragged << "\n";
 
 }
@@ -462,6 +472,54 @@ glm::vec3 rotatePoint(glm::vec3 center, float angle, glm::vec3 point) {
 	return point;
 }
 
+void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+	if ((action == GLFW_PRESS) && (key == GLFW_KEY_ESCAPE))
+		cleanUpScene();
+
+	if (action == GLFW_PRESS)
+		keyboard[key] = GL_TRUE;
+	else if (action == GLFW_RELEASE)
+		keyboard[key] = GL_FALSE;
+
+	if (key == GLFW_KEY_G && action == GLFW_PRESS) {
+		showGrid = !showGrid;
+	}
+
+	if (key == GLFW_KEY_C && action == GLFW_PRESS) {
+		showCPoints = !showCPoints;
+		if (!showCPoints) {
+			dragged = -1;
+		}
+	}
+
+	if (key == GLFW_KEY_1 && action == GLFW_PRESS) {
+		surface_id = 1;
+		generatePointsToDraw();
+		glBindBuffer(GL_ARRAY_BUFFER, VBO[0]);
+		glBufferData(GL_ARRAY_BUFFER, pointsToDraw.size() * sizeof(glm::vec3), pointsToDraw.data(), GL_STATIC_DRAW);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+	}
+
+	if (key == GLFW_KEY_2 && action == GLFW_PRESS) {
+		surface_id = 2;
+		generatePointsToDraw();
+		glBindBuffer(GL_ARRAY_BUFFER, VBO[0]);
+		glBufferData(GL_ARRAY_BUFFER, pointsToDraw.size() * sizeof(glm::vec3), pointsToDraw.data(), GL_STATIC_DRAW);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+	}
+
+	if (key == GLFW_KEY_R && action == GLFW_PRESS) {
+		for (int i = 0; i < controlPoints.size(); i++) {
+			controlPoints[i].y = 0.0f;
+		}
+		generatePointsToDraw();
+		glBindBuffer(GL_ARRAY_BUFFER, VBO[0]);
+		glBufferData(GL_ARRAY_BUFFER, pointsToDraw.size() * sizeof(glm::vec3), pointsToDraw.data(), GL_STATIC_DRAW);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+	}
+}
+
 void init(GLFWwindow* window) {
 	renderingProgram = createShaderProgram();
 	generateControllPoints();
@@ -611,40 +669,46 @@ void display() {
 	size_t begin = 0;
 
 	//Bezier felület kirajzolása
-	glProgramUniform1f(renderingProgram, drawingPoints, 3.0f);
-	begin = controlPoints.size() * 2;
-	for (size_t i = 0; i <= bezierLines * (x - 1); i++) {
-		glDrawArrays(GL_LINE_STRIP, begin, lineCount + 1);
-		begin += lineCount + 1;
-	}
+	if (surface_id == 1) {
+		glProgramUniform1f(renderingProgram, drawingPoints, 3.0f);
+		begin = controlPoints.size() * 2;
+		for (size_t i = 0; i <= bezierLines * (x - 1); i++) {
+			glDrawArrays(GL_LINE_STRIP, begin, lineCount + 1);
+			begin += lineCount + 1;
+		}
 
-	for (size_t i = 0; i <= bezierLines * (z - 1); i++) {
-		glDrawArrays(GL_LINE_STRIP, begin, lineCount + 1);
-		begin += lineCount + 1;
+		for (size_t i = 0; i <= bezierLines * (z - 1); i++) {
+			glDrawArrays(GL_LINE_STRIP, begin, lineCount + 1);
+			begin += lineCount + 1;
+		}
 	}
-
 	
-	glProgramUniform1f(renderingProgram, drawingPoints, 1.0f);
-	glPointSize(10);
-	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-	glDrawArrays(GL_POINTS, 0, controlPoints.size());
 
+	if (showCPoints) {
+		glProgramUniform1f(renderingProgram, drawingPoints, 1.0f);
+		glPointSize(10);
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		glDrawArrays(GL_POINTS, 0, controlPoints.size());
+	}
+	
 	glProgramUniform1f(renderingProgram, drawingPoints, 2.0f);
 
 	//Kontrollpontháló kirajzolása
-	//begin = 0;
-	//for (size_t i = 0; i < x; i++)
-	//{
-	//	glDrawArrays(GL_LINE_STRIP, begin, z);
-	//	begin += z;
-	//}
+	if (showGrid) {
+		begin = 0;
+		for (size_t i = 0; i < x; i++)
+		{
+			glDrawArrays(GL_LINE_STRIP, begin, z);
+			begin += z;
+		}
 
-	//begin = controlPoints.size();
-	//for (size_t i = 0; i < z; i++)
-	//{
-	//	glDrawArrays(GL_LINE_STRIP, begin, x);
-	//	begin += x;
-	//}
+		begin = controlPoints.size();
+		for (size_t i = 0; i < z; i++)
+		{
+			glDrawArrays(GL_LINE_STRIP, begin, x);
+			begin += x;
+		}
+	}
 	
 	glProgramUniform1f(renderingProgram, drawingPoints, 4.0f);
 	//tengely kirajzolása
