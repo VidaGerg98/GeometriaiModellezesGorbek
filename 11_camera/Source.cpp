@@ -27,7 +27,7 @@ R: kontrollpontok alaphelyzetbe állítása
 using namespace std;
 
 //bezierháló sûrûsége
-int bezierLines = 5;
+int bezierLines = 10;
 
 //bezier = 1
 //b-spline = 2
@@ -49,6 +49,7 @@ std::vector<glm::vec3> controlPoints;
 
 GLint dragged = -1;
 
+
 /* Vertex buffer objektum és vertex array objektum az adattároláshoz.*/
 #define numVBOs	1
 #define numVAOs	1
@@ -62,7 +63,7 @@ unsigned int	viewLoc;
 unsigned int	projectionLoc;
 int x, z;
 GLuint pointNum, selectedPoint, drawingPoints, numberOfPointsToDraw;
-GLfloat lineCount = 3.0f;
+GLfloat lineCount = 100.0f;
 bool showGrid = true, showCPoints = true;
 
 
@@ -245,9 +246,11 @@ glm::vec3 BezierPoints(GLfloat u, GLfloat v) {
 	return point;
 }
 
-GLfloat NFunction(int i, int p, GLfloat u, std::vector<float> Vec) {
+GLfloat NFunction(int i, int p, GLfloat u, std::vector<float> vect) {
+	GLfloat A, B, Asz, An, Bsz, Bn, NA, NB, res;
+
 	if (p == 0) {
-		if (Vec[i] <= u && u < Vec[i + 1]) {
+		if (vect[i] <= u && u < vect[i + 1]) {
 			return 1.0f;
 		}
 		else {
@@ -255,9 +258,38 @@ GLfloat NFunction(int i, int p, GLfloat u, std::vector<float> Vec) {
 		}
 	}
 
-	GLfloat A = (((u - Vec[i]) / (Vec[i + p] - Vec[i])) * NFunction(i, p - 1, u, Vec));
-	GLfloat B = ((Vec[i + p + 1] - u) / (Vec[i + p + 1] - Vec[i + 1])) * NFunction(i + 1, p - 1, u, Vec);
-	GLfloat res = A + B;
+	NA = NFunction(i, p - 1, u, vect);
+	NB = NFunction(i + 1, p - 1, u, vect);
+
+	if (NA != 0) {
+		An = (vect[i + p] - vect[i]);
+		if (An != 0) {
+			Asz = (u - vect[i]);
+			A = (Asz / An) * NA;
+		}
+		else {
+			A = 0;
+		}
+	}
+	else {
+		A = 0;
+	}
+
+	if (NB != 0) {
+		Bn = (vect[i + p + 1] - vect[i + 1]);
+		if (Bn != 0) {
+			Bsz = (vect[i + p + 1] - u);
+			B = (Bsz / Bn) * NB;
+		}
+		else {
+			B = 0;
+		}
+	}
+	else {
+		B = 0;
+	}
+	
+	res = A + B;
 
 	return res;
 }
@@ -266,10 +298,8 @@ glm::vec3 BSplinePoints(GLfloat u, GLfloat v, std::vector<GLfloat> U, std::vecto
 	glm::vec3 point = glm::vec3(0.0f, 0.0f, 0.0f);
 	GLint n = z - 1;
 	GLint m = x - 1;
-	GLint h = U.size() - 1;
-	GLint k = V.size() - 1;
-	GLint p = h - m - 1;
-	GLint q = k - n - 1;
+	GLint p = 3;
+	GLint q = 3;
 
 	for (int i = 0; i <= m; i++) {
 		for (int j = 0; j <= n; j++) {
@@ -351,6 +381,25 @@ void generateAxesToDraw() {
 	pointsToDraw.push_back(glm::vec3(0.0f, 0.0f, -1.0f));
 }
 
+std::vector<GLfloat> generateKnots() {
+	std::vector<GLfloat> U;
+	GLfloat u = 0.0f, increment = (1.0f / (x - 3));
+
+	U.push_back(0.0f);
+	U.push_back(0.0f);
+	U.push_back(0.0f);
+	while (u < 1.0f) {
+		U.push_back(u);
+		u += increment;
+	}
+	U.push_back(1.0f);
+	U.push_back(1.0f);
+	U.push_back(1.0f);
+	U.push_back(1.0f);
+
+	return U;
+}
+
 void generatePointsToDraw() {
 	pointsToDraw.clear();
 	for (int i = 0; i < controlPoints.size(); i++)
@@ -417,38 +466,72 @@ void generatePointsToDraw() {
 		pointsToDraw.push_back(BezierPoints(u, v));
 		//cout << "------------------------\n";
 	}
-	else if (surface_id == 2) {  //B-Spline feület
-		GLfloat u = 0.0f, v = 0.0f, increment = 1.0f / lineCount, uIcrement = (1.0f / bezierLines) / (x - 1), vIcrement = (1.0f / bezierLines) / (z - 1);
+
+
+	//B-Spline felület
+	else if (surface_id == 2) {
+
 		std::vector<GLfloat> U;
 		std::vector<GLfloat> V;
-		while (u < 1.0f){
-			U.push_back(u);
-			u += increment;
-		}
-		U.push_back(1.0f);
 
-		while (v < 1.0f) {
-			V.push_back(v);
-			v += increment;
-		}
-		V.push_back(1.0f);
+		U = generateKnots();
+		V = generateKnots();
 
-		cout << "U: ";
+		/*cout << "U: ";
 		for (int i = 0; i < U.size(); i++) {
 			cout << U[i] << ", ";
 		}
 		cout << "\n";
 		cout << "V: ";
-		for (int i = 0; i < U.size(); i++) {
+		for (int i = 0; i < V.size(); i++) {
 			cout << V[i] << ", ";
 		}
-		cout << "\n";
+		cout << "\n";*/
 
-		u = 0.0f, v = 0.0f;
-		U = { 0.0f, 0.0f, 0.0f, 0.25f, 0.5f, 0.75f, 1.0f, 1.0f, 1.0f };
-		V = {0.0f, 0.0f, 0.0f, 0.0f, 0.33f, 0.66f, 1.0f, 1.0f, 1.0f, 1.0f};
-		cout << glm::to_string(BSplinePoints(u, v, U, V)) << "\n";
+		GLfloat u = 0.0f, v = 0.0f, increment = 1.0f / lineCount, uIcrement = (1.0f / bezierLines) / (x - 1), vIcrement = (1.0f / bezierLines) / (z - 1);
 
+		while (u < 1.0f) {
+			v = 0.0f;
+			while (v < 1.0f) {
+				pointsToDraw.push_back(BSplinePoints(u, v, U, V));
+				cout << glm::to_string(BSplinePoints(u, v, U, V)) << "\n";
+				v += increment;
+			}
+			v = 1.0f;
+			pointsToDraw.push_back(BSplinePoints(u, v, U, V));
+			cout << glm::to_string(BSplinePoints(u, v, U, V)) << "\n";
+			u += uIcrement;
+		}
+		u = 1.0f, v = 0.0f;
+		while (v < 1.0f) {
+			pointsToDraw.push_back(BSplinePoints(u, v, U, V));
+			cout << glm::to_string(BSplinePoints(u, v, U, V)) << "\n";
+			v += increment;
+		}
+		v = 1.0f;
+		pointsToDraw.push_back(BSplinePoints(u, v, U, V));
+
+		v = 0.0f;
+		while (v < 1.0f) {
+			u = 0.0f;
+			while (u < 1.0f) {
+				pointsToDraw.push_back(BSplinePoints(u, v, U, V));
+				cout << glm::to_string(BSplinePoints(u, v, U, V)) << "\n";
+				u += increment;
+			}
+			u = 1.0f;
+			pointsToDraw.push_back(BSplinePoints(u, v, U, V));
+			cout << glm::to_string(BSplinePoints(u, v, U, V)) << "\n";
+			v += vIcrement;
+		}
+		v = 1.0f, u = 0.0f;
+		while (u < 1.0f) {
+			pointsToDraw.push_back(BSplinePoints(u, v, U, V));
+			cout << glm::to_string(BSplinePoints(u, v, U, V)) << "\n";
+			u += increment;
+		}
+		u = 1.0f;
+		pointsToDraw.push_back(BSplinePoints(u, v, U, V));
 
 
 	}
@@ -670,7 +753,7 @@ void display() {
 
 	//Bezier felület kirajzolása
 	if (surface_id == 1) {
-		glProgramUniform1f(renderingProgram, drawingPoints, 3.0f);
+		glProgramUniform1f(renderingProgram, drawingPoints, 30.0f);
 		begin = controlPoints.size() * 2;
 		for (size_t i = 0; i <= bezierLines * (x - 1); i++) {
 			glDrawArrays(GL_LINE_STRIP, begin, lineCount + 1);
