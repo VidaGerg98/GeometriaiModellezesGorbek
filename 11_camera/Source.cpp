@@ -27,7 +27,7 @@ R: kontrollpontok alaphelyzetbe állítása
 using namespace std;
 
 //bezierháló sûrûsége
-int bezierLines = 10;
+int bezierLines = 5;
 
 //bezier = 1
 //b-spline = 2
@@ -63,7 +63,7 @@ unsigned int	viewLoc;
 unsigned int	projectionLoc;
 int x, z;
 GLuint pointNum, selectedPoint, drawingPoints, numberOfPointsToDraw;
-GLfloat lineCount = 100.0f;
+GLfloat lineCount = 10.0f;
 bool showGrid = true, showCPoints = true;
 
 
@@ -381,9 +381,9 @@ void generateAxesToDraw() {
 	pointsToDraw.push_back(glm::vec3(0.0f, 0.0f, -1.0f));
 }
 
-std::vector<GLfloat> generateKnots() {
+std::vector<GLfloat> generateKnots(int points) {
 	std::vector<GLfloat> U;
-	GLfloat u = 0.0f, increment = (1.0f / (x - 3));
+	GLfloat u = 0.0f, increment = (1.0f / (points - 3));
 
 	U.push_back(0.0f);
 	U.push_back(0.0f);
@@ -427,7 +427,7 @@ void generatePointsToDraw() {
 			while (v < 1.0f) {
 				pointsToDraw.push_back(BezierPoints(u, v));
 				//cout << glm::to_string(BezierPoints(u, v)) << "\n";
-				v += increment;
+				v += increment;				
 			}
 			v = 1.0f;
 			pointsToDraw.push_back(BezierPoints(u, v));
@@ -474,10 +474,10 @@ void generatePointsToDraw() {
 		std::vector<GLfloat> U;
 		std::vector<GLfloat> V;
 
-		U = generateKnots();
-		V = generateKnots();
+		U = generateKnots(x);
+		V = generateKnots(z);
 
-		/*cout << "U: ";
+		cout << "U: ";
 		for (int i = 0; i < U.size(); i++) {
 			cout << U[i] << ", ";
 		}
@@ -486,7 +486,7 @@ void generatePointsToDraw() {
 		for (int i = 0; i < V.size(); i++) {
 			cout << V[i] << ", ";
 		}
-		cout << "\n";*/
+		cout << "\n";
 
 		GLfloat u = 0.0f, v = 0.0f, increment = 1.0f / lineCount, uIcrement = (1.0f / bezierLines) / (x - 1), vIcrement = (1.0f / bezierLines) / (z - 1);
 
@@ -494,18 +494,18 @@ void generatePointsToDraw() {
 			v = 0.0f;
 			while (v < 1.0f) {
 				pointsToDraw.push_back(BSplinePoints(u, v, U, V));
-				cout << glm::to_string(BSplinePoints(u, v, U, V)) << "\n";
+				//cout << glm::to_string(BSplinePoints(u, v, U, V)) << "\n";
 				v += increment;
 			}
 			v = 1.0f;
 			pointsToDraw.push_back(BSplinePoints(u, v, U, V));
-			cout << glm::to_string(BSplinePoints(u, v, U, V)) << "\n";
+			//cout << glm::to_string(BSplinePoints(u, v, U, V)) << "\n";
 			u += uIcrement;
 		}
 		u = 1.0f, v = 0.0f;
 		while (v < 1.0f) {
 			pointsToDraw.push_back(BSplinePoints(u, v, U, V));
-			cout << glm::to_string(BSplinePoints(u, v, U, V)) << "\n";
+			//cout << glm::to_string(BSplinePoints(u, v, U, V)) << "\n";
 			v += increment;
 		}
 		v = 1.0f;
@@ -516,18 +516,18 @@ void generatePointsToDraw() {
 			u = 0.0f;
 			while (u < 1.0f) {
 				pointsToDraw.push_back(BSplinePoints(u, v, U, V));
-				cout << glm::to_string(BSplinePoints(u, v, U, V)) << "\n";
+				//cout << glm::to_string(BSplinePoints(u, v, U, V)) << "\n";
 				u += increment;
 			}
 			u = 1.0f;
 			pointsToDraw.push_back(BSplinePoints(u, v, U, V));
-			cout << glm::to_string(BSplinePoints(u, v, U, V)) << "\n";
+			//cout << glm::to_string(BSplinePoints(u, v, U, V)) << "\n";
 			v += vIcrement;
 		}
 		v = 1.0f, u = 0.0f;
 		while (u < 1.0f) {
 			pointsToDraw.push_back(BSplinePoints(u, v, U, V));
-			cout << glm::to_string(BSplinePoints(u, v, U, V)) << "\n";
+			//cout << glm::to_string(BSplinePoints(u, v, U, V)) << "\n";
 			u += increment;
 		}
 		u = 1.0f;
@@ -752,8 +752,7 @@ void display() {
 	size_t begin = 0;
 
 	//Bezier felület kirajzolása
-	if (surface_id == 1) {
-		glProgramUniform1f(renderingProgram, drawingPoints, 30.0f);
+		glProgramUniform1f(renderingProgram, drawingPoints, 3.0f);
 		begin = controlPoints.size() * 2;
 		for (size_t i = 0; i <= bezierLines * (x - 1); i++) {
 			glDrawArrays(GL_LINE_STRIP, begin, lineCount + 1);
@@ -764,7 +763,6 @@ void display() {
 			glDrawArrays(GL_LINE_STRIP, begin, lineCount + 1);
 			begin += lineCount + 1;
 		}
-	}
 	
 
 	if (showCPoints) {
