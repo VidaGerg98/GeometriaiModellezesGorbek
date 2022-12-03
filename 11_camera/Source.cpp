@@ -796,11 +796,7 @@ void display() {
 	}
 
 	if (surfaceIdChange) {
-		for (int i = 0; i < controlPoints.size(); i++) {
-			controlPoints[i].y = 0.0f;
-		}
 		surface_id = temp_surface_id;
-		dragged = -1;
 		generatePointsToDraw();
 		glBindBuffer(GL_ARRAY_BUFFER, VBO[0]);
 		glBufferData(GL_ARRAY_BUFFER, pointsToDraw.size() * sizeof(glm::vec3), pointsToDraw.data(), GL_STATIC_DRAW);
