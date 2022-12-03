@@ -29,12 +29,12 @@ R: kontrollpontok alaphelyzetbe állítása
 using namespace std;
 
 //bezierháló sûrûsége
-int bezierLines = 5;
+int density = 5;
 
 //bezier = 1
 //b-spline = 2
 int surface_id = 1;
-int temp_X, temp_Z, temp_surface_id;
+int temp_X, temp_Z, temp_surface_id, temp_density;
 
 extern void cleanUpScene();
 
@@ -67,7 +67,7 @@ unsigned int	projectionLoc;
 int x, z;
 GLuint pointNum, selectedPoint, drawingPoints, numberOfPointsToDraw;
 GLfloat lineCount = 10.0f;
-bool showGrid = true, showCPoints = true, controllPointsToDefault = true, numberOfControllPointsChanged = false, surfaceIdChange = false;
+bool showGrid = true, showCPoints = true, controllPointsToDefault = true, numberOfControllPointsChanged = false, surfaceIdChange = false, densityChange = false;
 
 
 /** Vetítési és kamera mátrixok felvétele. */
@@ -458,7 +458,7 @@ void generatePointsToDraw() {
 
 	//Bezier felület
 	if (surface_id == 1) {
-		GLfloat u = 0.0f, v = 0.0f, increment = 1.0f / lineCount, uIcrement = (1.0f / bezierLines) / (x - 1), vIcrement = (1.0f / bezierLines) / (z - 1);
+		GLfloat u = 0.0f, v = 0.0f, increment = 1.0f / lineCount, uIcrement = (1.0f / density) / (x - 1), vIcrement = (1.0f / density) / (z - 1);
 
 		while (u < 1.0f) {
 			v = 0.0f;
@@ -526,7 +526,7 @@ void generatePointsToDraw() {
 		}
 		//cout << "\n";
 
-		GLfloat u = 0.0f, v = 0.0f, increment = 1.0f / lineCount, uIcrement = (1.0f / bezierLines) / (x - 1), vIcrement = (1.0f / bezierLines) / (z - 1);
+		GLfloat u = 0.0f, v = 0.0f, increment = 1.0f / lineCount, uIcrement = (1.0f / density) / (x - 1), vIcrement = (1.0f / density) / (z - 1);
 
 		while (u < 1.0f) {
 			v = 0.0f;
@@ -800,11 +800,21 @@ void display() {
 			controlPoints[i].y = 0.0f;
 		}
 		surface_id = temp_surface_id;
+		dragged = -1;
 		generatePointsToDraw();
 		glBindBuffer(GL_ARRAY_BUFFER, VBO[0]);
 		glBufferData(GL_ARRAY_BUFFER, pointsToDraw.size() * sizeof(glm::vec3), pointsToDraw.data(), GL_STATIC_DRAW);
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 		surfaceIdChange = false;
+	}
+
+	if (densityChange) {
+		density = temp_density;
+		generatePointsToDraw();
+		glBindBuffer(GL_ARRAY_BUFFER, VBO[0]);
+		glBufferData(GL_ARRAY_BUFFER, pointsToDraw.size() * sizeof(glm::vec3), pointsToDraw.data(), GL_STATIC_DRAW);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		densityChange = false;
 	}
 		
 
@@ -825,12 +835,12 @@ void display() {
 	//Bezier felület kirajzolása
 		glProgramUniform1f(renderingProgram, drawingPoints, 3.0f);
 		begin = controlPoints.size() * 2;
-		for (size_t i = 0; i <= bezierLines * (x - 1); i++) {
+		for (size_t i = 0; i <= density * (x - 1); i++) {
 			glDrawArrays(GL_LINE_STRIP, begin, lineCount + 1);
 			begin += lineCount + 1 ;
 		}
 
-		for (size_t i = 0; i <= bezierLines * (z - 1); i++) {
+		for (size_t i = 0; i <= density * (z - 1); i++) {
 			glDrawArrays(GL_LINE_STRIP, begin, lineCount + 1);
 			begin += lineCount + 1;
 		}
@@ -958,6 +968,12 @@ extern "C"
 	{
 		temp_surface_id = param_surface_id;
 		surfaceIdChange = true;
+	}
+
+	__declspec(dllexport) void HandleDensityChange(int param_density)
+	{
+		temp_density = param_density;
+		densityChange = true;
 	}
 }
 
