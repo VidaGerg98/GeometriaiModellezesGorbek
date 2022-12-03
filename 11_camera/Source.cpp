@@ -346,18 +346,19 @@ void computeCameraMatrix() {
 
 void generateControllPoints(int paramX, int paramZ) {
 
-	controlPoints.clear();
+	//dll-hez szükséges utasítások
+	//controlPoints.clear();
 
-	x = paramX;
-	z = paramZ;
+	//x = paramX;
+	//z = paramZ;
 
-	/*do {
+	do {
 		cout << "Pontok X mentén (min 2 max 10): ";
 		cin >> x;
 
 		cout << "Pontok Z mentén (min 2 max 10): ";
 		cin >> z;
-	} while (x <= 1 || z <= 1 || x > 10 || z > 10);*/
+	} while (x <= 1 || z <= 1 || x > 10 || z > 10);
 	
 
 	float x_cord = 0.1f, z_cord = 0.1f, increment = 0.1f;
