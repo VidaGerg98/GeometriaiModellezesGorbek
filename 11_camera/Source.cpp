@@ -24,6 +24,8 @@ R: kontrollpontok alaphelyzetbe állítása
 #include <string>
 #include <vector>
 
+#include <Windows.h>
+
 using namespace std;
 
 //bezierháló sûrûsége
@@ -31,7 +33,8 @@ int bezierLines = 5;
 
 //bezier = 1
 //b-spline = 2
-int surface_id = 2;
+int surface_id = 1;
+int temp_X, temp_Z, temp_surface_id;
 
 extern void cleanUpScene();
 
@@ -64,7 +67,7 @@ unsigned int	projectionLoc;
 int x, z;
 GLuint pointNum, selectedPoint, drawingPoints, numberOfPointsToDraw;
 GLfloat lineCount = 10.0f;
-bool showGrid = true, showCPoints = true;
+bool showGrid = true, showCPoints = true, controllPointsToDefault = true, numberOfControllPointsChanged = false, surfaceIdChange = false;
 
 
 /** Vetítési és kamera mátrixok felvétele. */
@@ -341,15 +344,20 @@ void computeCameraMatrix() {
 	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 }
 
-void generateControllPoints() {
+void generateControllPoints(int paramX, int paramZ) {
 
-	do {
+	controlPoints.clear();
+
+	x = paramX;
+	z = paramZ;
+
+	/*do {
 		cout << "Pontok X mentén (min 2 max 10): ";
 		cin >> x;
 
 		cout << "Pontok Z mentén (min 2 max 10): ";
 		cin >> z;
-	} while (x <= 1 || z <= 1 || x > 10 || z > 10);
+	} while (x <= 1 || z <= 1 || x > 10 || z > 10);*/
 	
 
 	float x_cord = 0.1f, z_cord = 0.1f, increment = 0.1f;
@@ -605,7 +613,7 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 
 void init(GLFWwindow* window) {
 	renderingProgram = createShaderProgram();
-	generateControllPoints();
+	generateControllPoints(3, 3);
 	generatePointsToDraw();
 
 	/* Létrehozzuk a szükséges Vertex buffer és vertex array objektumot. */
@@ -735,6 +743,36 @@ void display() {
 			glBindBuffer(GL_ARRAY_BUFFER, 0);
 		}
 
+	if (controllPointsToDefault) {
+		for (int i = 0; i < controlPoints.size(); i++) {
+			controlPoints[i].y = 0.0f;
+		}
+		generatePointsToDraw();
+		glBindBuffer(GL_ARRAY_BUFFER, VBO[0]);
+		glBufferData(GL_ARRAY_BUFFER, pointsToDraw.size() * sizeof(glm::vec3), pointsToDraw.data(), GL_STATIC_DRAW);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		dragged = -1;
+		controllPointsToDefault = false;
+	}
+
+	if (numberOfControllPointsChanged) {
+		generateControllPoints(temp_X, temp_Z);
+		generatePointsToDraw();
+		glBindBuffer(GL_ARRAY_BUFFER, VBO[0]);
+		glBufferData(GL_ARRAY_BUFFER, pointsToDraw.size() * sizeof(glm::vec3), pointsToDraw.data(), GL_STATIC_DRAW);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		numberOfControllPointsChanged = false;
+		dragged = -1;
+	}
+
+	if (surfaceIdChange) {
+		surface_id = temp_surface_id;
+		generatePointsToDraw();
+		glBindBuffer(GL_ARRAY_BUFFER, VBO[0]);
+		glBufferData(GL_ARRAY_BUFFER, pointsToDraw.size() * sizeof(glm::vec3), pointsToDraw.data(), GL_STATIC_DRAW);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		surfaceIdChange = false;
+	}
 		
 
 	//translateM = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
@@ -850,4 +888,60 @@ int main(void) {
 	cleanUpScene();
 	
 	return EXIT_SUCCESS;
+}
+
+DWORD dwThreadId = NULL;
+
+extern "C"
+{
+	__declspec(dllexport) void Init()
+	{
+		CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)main, NULL, 0, &dwThreadId);
+	}
+
+	__declspec(dllexport) void HandleControllPointsShow(bool value)
+	{
+		showCPoints = value;
+	}
+
+	__declspec(dllexport) void HandleGridShow(bool value)
+	{
+		showGrid = value;
+	}
+
+	__declspec(dllexport) void ControllPointsToDefault()
+	{
+		controllPointsToDefault = true;
+	}
+
+	__declspec(dllexport) void HandleNumberOfControllPointsChange(int param_X, int param_Z)
+	{
+		temp_X = param_X;
+		temp_Z = param_Z;
+		numberOfControllPointsChanged = true;
+	}
+
+	__declspec(dllexport) void HandleSurfaceIdChange(int param_surface_id)
+	{
+		temp_surface_id = param_surface_id;
+		surfaceIdChange = true;
+	}
+}
+
+
+BOOL APIENTRY DllMain(HMODULE hModule, DWORD dwReason, LPVOID lpReserved)
+{
+	switch (dwReason)
+	{
+	case DLL_PROCESS_ATTACH:
+		break;
+	case DLL_PROCESS_DETACH:
+		if (dwThreadId != NULL) {
+			TerminateThread((HANDLE)dwThreadId, 0);
+		}
+		break;
+	default:
+		break;
+	}
+	return TRUE;
 }
