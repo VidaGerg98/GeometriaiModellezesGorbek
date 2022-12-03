@@ -301,13 +301,29 @@ glm::vec3 BSplinePoints(GLfloat u, GLfloat v, std::vector<GLfloat> U, std::vecto
 	glm::vec3 point = glm::vec3(0.0f, 0.0f, 0.0f);
 	GLint n = z - 1;
 	GLint m = x - 1;
-	GLint p = 3;
-	GLint q = 3;
-
+	GLint p, q;
+	if (m >= 3) {
+		 p = 3;
+	}
+	else {
+		p = 2;
+	}
+	if (n >= 3) {
+		q = 3;
+	}
+	else {
+		q = 2;
+	}
+	
 	for (int i = 0; i <= m; i++) {
 		for (int j = 0; j <= n; j++) {
 			GLfloat N1 = NFunction(i, p, u, U);
 			GLfloat N2 = NFunction(j, q, v, V);
+			/*if (u == 1.0 && v == 1.0) {
+				cout << i << " " << j<<" ";
+				cout << N1<<" ";
+				cout << N2<<endl;
+			}*/
 			point.x += N1 * N2 * controlPoints.at(i * z + j).x;
 			point.y += N1 * N2 * controlPoints.at(i * z + j).y;
 			point.z += N1 * N2 * controlPoints.at(i * z + j).z;
@@ -332,7 +348,7 @@ void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
 			dragged = getActivePoint(controlPoints, 0.05f, x, window_height - y);
 		}
 	}	
-	cout << dragged << "\n";
+	//cout << dragged << "\n";
 
 }
 
@@ -353,12 +369,12 @@ void generateControllPoints(int paramX, int paramZ) {
 	//z = paramZ;
 
 	do {
-		cout << "Pontok X mentén (min 2 max 10): ";
+		cout << "Pontok X mentén (min 3 max 10): ";
 		cin >> x;
 
-		cout << "Pontok Z mentén (min 2 max 10): ";
+		cout << "Pontok Z mentén (min 3 max 10): ";
 		cin >> z;
-	} while (x <= 1 || z <= 1 || x > 10 || z > 10);
+	} while (x <= 2 || z <= 2 || x > 10 || z > 10);
 	
 
 	float x_cord = 0.1f, z_cord = 0.1f, increment = 0.1f;
@@ -393,18 +409,31 @@ void generateAxesToDraw() {
 std::vector<GLfloat> generateKnots(int points) {
 	std::vector<GLfloat> U;
 	GLfloat u = 0.0f, increment = (1.0f / (points - 3));
-
-	U.push_back(0.0f);
-	U.push_back(0.0f);
-	U.push_back(0.0f);
-	while (u < 1.0f) {
-		U.push_back(u);
-		u += increment;
+	if (points >= 4) {
+		U.push_back(0.0f);
+		U.push_back(0.0f);
+		U.push_back(0.0f);
+		while (u < 1.0f) {
+			U.push_back(u);
+			u += increment;
+		}
+		U.push_back(1.0f);
+		U.push_back(1.0f);
+		U.push_back(1.0f);
+		U.push_back(1.0f);
 	}
-	U.push_back(1.0f);
-	U.push_back(1.0f);
-	U.push_back(1.0f);
-	U.push_back(1.0f);
+	else {
+		U.push_back(0.0f);
+		U.push_back(0.0f);
+		while (u < 1.0f) {
+			U.push_back(u);
+			u += increment;
+		}
+		U.push_back(1.0f);
+		U.push_back(1.0f);
+		U.push_back(1.0f);
+	}
+	
 
 	return U;
 }
@@ -486,16 +515,16 @@ void generatePointsToDraw() {
 		U = generateKnots(x);
 		V = generateKnots(z);
 
-		cout << "U: ";
+		//cout << "U: ";
 		for (int i = 0; i < U.size(); i++) {
-			cout << U[i] << ", ";
+			//cout << U[i] << ", ";
 		}
-		cout << "\n";
-		cout << "V: ";
+		//cout << "\n";
+		//cout << "V: ";
 		for (int i = 0; i < V.size(); i++) {
-			cout << V[i] << ", ";
+			//cout << V[i] << ", ";
 		}
-		cout << "\n";
+		//cout << "\n";
 
 		GLfloat u = 0.0f, v = 0.0f, increment = 1.0f / lineCount, uIcrement = (1.0f / bezierLines) / (x - 1), vIcrement = (1.0f / bezierLines) / (z - 1);
 
@@ -506,18 +535,18 @@ void generatePointsToDraw() {
 				//cout << glm::to_string(BSplinePoints(u, v, U, V)) << "\n";
 				v += increment;
 			}
-			v = 1.0f;
+			v = 0.999999f;
 			pointsToDraw.push_back(BSplinePoints(u, v, U, V));
 			//cout << glm::to_string(BSplinePoints(u, v, U, V)) << "\n";
 			u += uIcrement;
 		}
-		u = 1.0f, v = 0.0f;
+		u = 0.99999f, v = 0.0f;
 		while (v < 1.0f) {
 			pointsToDraw.push_back(BSplinePoints(u, v, U, V));
 			//cout << glm::to_string(BSplinePoints(u, v, U, V)) << "\n";
 			v += increment;
 		}
-		v = 1.0f;
+		v = 0.99999f;
 		pointsToDraw.push_back(BSplinePoints(u, v, U, V));
 
 		v = 0.0f;
@@ -528,18 +557,18 @@ void generatePointsToDraw() {
 				//cout << glm::to_string(BSplinePoints(u, v, U, V)) << "\n";
 				u += increment;
 			}
-			u = 1.0f;
+			u = 0.99999f;
 			pointsToDraw.push_back(BSplinePoints(u, v, U, V));
 			//cout << glm::to_string(BSplinePoints(u, v, U, V)) << "\n";
 			v += vIcrement;
 		}
-		v = 1.0f, u = 0.0f;
+		v = 0.99999f, u = 0.0f;
 		while (u < 1.0f) {
 			pointsToDraw.push_back(BSplinePoints(u, v, U, V));
 			//cout << glm::to_string(BSplinePoints(u, v, U, V)) << "\n";
 			u += increment;
 		}
-		u = 1.0f;
+		u = 0.99999f;
 		pointsToDraw.push_back(BSplinePoints(u, v, U, V));
 
 
@@ -795,7 +824,7 @@ void display() {
 		begin = controlPoints.size() * 2;
 		for (size_t i = 0; i <= bezierLines * (x - 1); i++) {
 			glDrawArrays(GL_LINE_STRIP, begin, lineCount + 1);
-			begin += lineCount + 1;
+			begin += lineCount + 1 ;
 		}
 
 		for (size_t i = 0; i <= bezierLines * (z - 1); i++) {
